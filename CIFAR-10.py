@@ -5,19 +5,27 @@ from torch.utils.data import DataLoader
 
 
 # CIFAR10 专用归一化均值方差
-transform = transforms.Compose([
+train_transform = transforms.Compose([
+    transforms.RandomCrop(32, padding=4),
+    transforms.RandomHorizontalFlip(),
     transforms.ToTensor(),
+    transforms.Normalize((0.4914, 0.4822, 0.4465), 
+                         (0.2470, 0.2435, 0.2616))
+])
+
+test_transform = transforms.Compose([
+    transforms.ToTensor(), 
     transforms.Normalize((0.4914, 0.4822, 0.4465), 
                          (0.2470, 0.2435, 0.2616))
 ])
 
 # 加载训练数据集
 train_dataset = datasets.CIFAR10(root='./data', train=True, 
-                                 transform=transform, download=False)
+                                 transform=train_transform, download=False)
 train_loader = DataLoader(train_dataset, batch_size=64, shuffle=True)
 # 加载测试数据集
 test_dataset = datasets.CIFAR10(root='./data', train=False, 
-                                transform=transform, download=False)
+                                transform=test_transform, download=False)
 test_loader = DataLoader(test_dataset, batch_size=64, shuffle=False)
 # 配置设备
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')

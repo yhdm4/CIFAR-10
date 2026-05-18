@@ -22,11 +22,11 @@ test_transform = transforms.Compose([
 # 加载训练数据集
 train_dataset = datasets.CIFAR10(root='./data', train=True, 
                                  transform=train_transform, download=False)
-train_loader = DataLoader(train_dataset, batch_size=256, shuffle=True)
+train_loader = DataLoader(train_dataset, batch_size=128, shuffle=True)
 # 加载测试数据集
 test_dataset = datasets.CIFAR10(root='./data', train=False, 
                                 transform=test_transform, download=False)
-test_loader = DataLoader(test_dataset, batch_size=256, shuffle=False)
+test_loader = DataLoader(test_dataset, batch_size=128, shuffle=False)
 # 配置设备
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print(f'Using device: {device}')
@@ -56,18 +56,20 @@ class CNN(nn.Module):
             nn.BatchNorm2d(128),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2, stride=2),
+            nn.AdaptiveAvgPool2d((1, 1)),
             nn.Flatten(),
-            nn.Dropout(0.5),
-            nn.Linear(128 * 4 * 4, 10)
+            nn.Dropout(0.3),
+            nn.Linear(128 , 10)
         )
     def forward(self, x):
         return self.net(x)
     
 model = CNN().to(device)
-criterion = nn.CrossEntropyLoss()
-optimizer = torch.optim.Adam(model.parameters(), lr=0.001, weight_decay=1e-4)  
-# 训练模型  
 num_epochs = 50
+criterion = nn.CrossEntropyLoss(label_smoothing=0.1)
+optimizer = torch.optim.Adam(model.parameters(), lr=0.001, weight_decay=1e-4)
+scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer,T_max=num_epochs) 
+# 训练模型  
 for epoch in range(num_epochs):
     model.train()
     total_loss = 0
@@ -79,6 +81,7 @@ for epoch in range(num_epochs):
         loss.backward()
         optimizer.step()
         total_loss += loss.item()
+    scheduler.step()
     avg_loss = total_loss / len(train_loader)
     print(f'Epoch [{epoch+1}/{num_epochs}], Loss: {avg_loss:.4f}')
 model.eval()
